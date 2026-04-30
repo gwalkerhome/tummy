@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shape Tracker">
+<title>Shape Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-mid: #5a5a55;
+    --ink-soft: #9a9a90;
+    --paper: #f5f2ec;
+    --paper-warm: #ede9e0;
+    --paper-card: #faf8f4;
+    --accent: #b85c38;
+    --accent-light: #f0e0d8;
+    --green: #3a6b4a;
+    --green-light: #d8ead0;
+    --line: rgba(26,26,24,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100vh;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+  }
+  body { padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0); }
+
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 3rem 1.5rem 1.5rem;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  header .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  header .date-tag {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12px;
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── FORM ── */
+  .form-body { flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .prev-banner {
+    background: var(--green-light);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 13px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .prev-banner.hidden { display: none; }
+  .prev-banner .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+
+  .field-card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+  }
+  .field-card label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .field-card .field-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .field-row input[type="number"] {
+    flex: 1;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--paper-warm);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .field-row input[type="number"]::-webkit-inner-spin-button,
+  .field-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .field-row input:focus { border-color: var(--accent); background: #fff; }
+  .unit-label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    min-width: 24px;
+  }
+  .prev-val {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    min-height: 16px;
+  }
+  .prev-val .change {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+  .change.down { background: var(--green-light); color: var(--green); }
+  .change.up { background: var(--accent-light); color: var(--accent); }
+  .change.same { background: var(--paper-warm); color: var(--ink-soft); }
+
+  .notes-card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+  }
+  .notes-card label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .notes-card textarea {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--paper-warm);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+  }
+  .notes-card textarea:focus { border-color: var(--accent); background: #fff; }
+
+  /* ── SUBMIT ── */
+  .submit-area { padding: 1rem 1.5rem 2rem; }
+  .btn-submit {
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-submit:active { transform: scale(0.98); background: #333; }
+  .btn-submit:disabled { background: var(--ink-soft); cursor: not-allowed; }
+
+  .status-msg {
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    min-height: 18px;
+  }
+  .status-msg.error { color: var(--accent); }
+  .status-msg.ok { color: var(--green); }
+
+  /* ── CONFIG SCREEN ── */
+  .config-body { flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .config-intro { font-size: 14px; color: var(--ink-mid); line-height: 1.6; }
+  .config-intro a { color: var(--accent); }
+  .config-field { display: flex; flex-direction: column; gap: 6px; }
+  .config-field label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+  .config-field input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--paper-warm);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    outline: none;
+  }
+  .config-field input:focus { border-color: var(--accent); background: #fff; }
+  .config-field .hint { font-size: 12px; color: var(--ink-soft); }
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save:active { opacity: 0.85; }
+
+  .nav-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 0.5rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── HISTORY ── */
+  .history-body { flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+  .history-empty { font-size: 14px; color: var(--ink-soft); text-align: center; padding: 3rem 0; }
+  .history-entry {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+  }
+  .history-entry .h-date {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .history-entry .h-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .history-entry .h-row:last-child { border-bottom: none; }
+  .history-entry .h-row .h-label { color: var(--ink-mid); }
+  .history-entry .h-row .h-val { font-family: 'DM Serif Display', serif; font-size: 1rem; }
+
+  /* ── SUCCESS ── */
+  .success-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    gap: 1rem;
+  }
+  .success-icon {
+    width: 72px; height: 72px;
+    background: var(--green-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+  }
+  .success-body h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+  }
+  .success-body p { font-size: 14px; color: var(--ink-mid); line-height: 1.6; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+
+  /* ── NAV BAR ── */
+  .bottom-nav {
+    display: flex;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.75rem 0.5rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--ink-soft);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+
+<!-- CHECK-IN SCREEN -->
+<div class="screen active" id="screen-checkin">
+  <header>
+    <div class="eyebrow">Weekly Check-in</div>
+    <h1>How are you<br>shaping up?</h1>
+    <span class="date-tag" id="today-date"></span>
+  </header>
+  <div class="form-body">
+    <div class="prev-banner hidden" id="prev-banner">
+      <div class="dot"></div>
+      <span id="prev-banner-text">Last logged <span id="prev-weeks"></span></span>
+    </div>
+
+    <div class="field-card">
+      <div class="field-name">Chest</div>
+      <div class="field-row">
+        <input type="number" id="f-chest" placeholder="—" step="0.5" min="30" max="200">
+        <span class="unit-label">cm</span>
+      </div>
+      <div class="prev-val" id="p-chest"></div>
+    </div>
+    <div class="field-card">
+      <div class="field-name">Waist</div>
+      <div class="field-row">
+        <input type="number" id="f-waist" placeholder="—" step="0.5" min="30" max="200">
+        <span class="unit-label">cm</span>
+      </div>
+      <div class="prev-val" id="p-waist"></div>
+    </div>
+    <div class="field-card">
+      <div class="field-name">Upper Arms <span style="font-size:12px;color:var(--ink-soft)">(average)</span></div>
+      <div class="field-row">
+        <input type="number" id="f-arms" placeholder="—" step="0.5" min="10" max="100">
+        <span class="unit-label">cm</span>
+      </div>
+      <div class="prev-val" id="p-arms"></div>
+    </div>
+    <div class="field-card">
+      <div class="field-name">Tummy</div>
+      <div class="field-row">
+        <input type="number" id="f-tummy" placeholder="—" step="0.5" min="10" max="60">
+        <span class="unit-label">cm</span>
+      </div>
+      <div class="prev-val" id="p-tummy"></div>
+    </div>
+    <div class="notes-card">
+      <label>Notes (optional)</label>
+      <textarea id="f-notes" rows="2" placeholder="How are you feeling? Anything to note…"></textarea>
+    </div>
+  </div>
+  <div class="submit-area">
+    <button class="btn-submit" id="btn-submit" onclick="submitCheckin()">Save this week ↗</button>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('checkin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Log
+    </button>
+    <button class="nav-btn" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="showScreen('config')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Setup
+    </button>
+  </nav>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="screen" id="screen-success">
+  <div class="success-body">
+    <div class="success-icon">✓</div>
+    <h2>Week logged.</h2>
+    <p id="success-detail">Your measurements have been saved locally and sent to your spreadsheet.</p>
+    <button class="btn-secondary" onclick="showScreen('history')">View history</button>
+    <button class="btn-secondary" onclick="showScreen('checkin')">← Back to check-in</button>
+  </div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div class="screen" id="screen-history">
+  <header>
+    <div class="eyebrow">Your progress</div>
+    <h1>History</h1>
+  </header>
+  <div class="history-body" id="history-body">
+    <div class="history-empty">No entries yet. Log your first check-in!</div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('checkin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Log
+    </button>
+    <button class="nav-btn active" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="showScreen('config')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Setup
+    </button>
+  </nav>
+</div>
+
+<!-- CONFIG SCREEN -->
+<div class="screen" id="screen-config">
+  <header>
+    <div class="eyebrow">One-time setup</div>
+    <h1>Connect<br>your sheet</h1>
+  </header>
+  <div class="config-body">
+    <p class="config-intro">
+      Paste your Google Apps Script Web App URL below. This lets the app send your measurements directly to your spreadsheet. See the setup guide for how to get this URL.
+    </p>
+    <div class="config-field">
+      <label>Apps Script URL</label>
+      <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec">
+      <span class="hint">From your deployed Google Apps Script</span>
+    </div>
+    <div class="config-field">
+      <label>Your name (optional)</label>
+      <input type="text" id="cfg-name" placeholder="e.g. Carlos">
+      <span class="hint">Shown on the check-in screen</span>
+    </div>
+    <button class="btn-save" onclick="saveConfig()">Save settings</button>
+    <div class="status-msg" id="cfg-status"></div>
+    <div style="background:var(--paper-warm);border-radius:12px;padding:1rem 1.25rem;font-size:13px;line-height:1.7;color:var(--ink-mid);">
+      <strong style="display:block;margin-bottom:6px;color:var(--ink);">Don't have a URL yet?</strong>
+      The app works perfectly as a local tracker even without one — all your data is saved on this device. You can connect Google Sheets any time later.
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('checkin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Log
+    </button>
+    <button class="nav-btn" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      History
+    </button>
+    <button class="nav-btn active" onclick="showScreen('config')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Setup
+    </button>
+  </nav>
+</div>
+
+<script>
+const FIELDS = ['chest','waist','arms','tummy'];
+const LABELS = { chest:'Chest', waist:'Waist', arms:'Upper Arms', tummy:'Tummy' };
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem('shapetracker') || '{"entries":[],"config":{}}'); }
+  catch(e) { return {entries:[], config:{}}; }
+}
+function saveData(d) { localStorage.setItem('shapetracker', JSON.stringify(d)); }
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(name === 'history') renderHistory();
+  if(name === 'checkin') renderCheckin();
+  if(name === 'config') renderConfig();
+}
+
+function renderConfig() {
+  const d = getData();
+  document.getElementById('cfg-url').value = d.config.url || '';
+  document.getElementById('cfg-name').value = d.config.name || '';
+}
+
+function saveConfig() {
+  const d = getData();
+  d.config.url = document.getElementById('cfg-url').value.trim();
+  d.config.name = document.getElementById('cfg-name').value.trim();
+  saveData(d);
+  const st = document.getElementById('cfg-status');
+  st.textContent = 'Saved!'; st.className = 'status-msg ok';
+  setTimeout(() => { st.textContent = ''; }, 2000);
+}
+
+function renderCheckin() {
+  const d = getData();
+  const now = new Date();
+  document.getElementById('today-date').textContent = now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+
+  const last = d.entries.length ? d.entries[d.entries.length-1] : null;
+  const banner = document.getElementById('prev-banner');
+  if(last) {
+    banner.classList.remove('hidden');
+    const weeksAgo = Math.round((now - new Date(last.date)) / (7*24*60*60*1000));
+    document.getElementById('prev-weeks').textContent = weeksAgo <= 1 ? '1 week ago' : weeksAgo+' weeks ago';
+    FIELDS.forEach(f => {
+      const el = document.getElementById('p-'+f);
+      if(last[f]) {
+        el.innerHTML = 'Last: <strong>'+last[f]+' cm</strong>';
+      }
+    });
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  if(d.config.name) {
+    document.querySelector('header h1').innerHTML = 'How are you<br>shaping up, '+d.config.name+'?';
+  }
+}
+
+function renderHistory() {
+  const d = getData();
+  const body = document.getElementById('history-body');
+  if(!d.entries.length) {
+    body.innerHTML = '<div class="history-empty">No entries yet. Log your first check-in!</div>';
+    return;
+  }
+  const reversed = [...d.entries].reverse();
+  body.innerHTML = reversed.map((e,i) => {
+    const prev = reversed[i+1];
+    return '<div class="history-entry">' +
+      '<div class="h-date">'+formatDate(e.date)+'</div>' +
+      FIELDS.filter(f => e[f]).map(f => {
+        let chg = '';
+        if(prev && prev[f]) {
+          const diff = parseFloat((e[f]-prev[f]).toFixed(1));
+          if(diff < 0) chg = '<span class="change down">'+diff+' cm</span>';
+          else if(diff > 0) chg = '<span class="change up">+'+diff+' cm</span>';
+          else chg = '<span class="change same">no change</span>';
+        }
+        return '<div class="h-row"><span class="h-label">'+LABELS[f]+'</span><span class="h-val">'+e[f]+' cm'+chg+'</span></div>';
+      }).join('') +
+      (e.notes ? '<div style="font-size:13px;color:var(--ink-mid);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);">'+e.notes+'</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function submitCheckin() {
+  const vals = {};
+  let anyFilled = false;
+  FIELDS.forEach(f => {
+    const v = parseFloat(document.getElementById('f-'+f).value);
+    if(!isNaN(v) && v > 0) { vals[f] = v; anyFilled = true; }
+  });
+  if(!anyFilled) {
+    const st = document.getElementById('status-msg');
+    st.textContent = 'Please enter at least one measurement.';
+    st.className = 'status-msg error';
+    return;
+  }
+
+  vals.date = new Date().toISOString();
+  vals.notes = document.getElementById('f-notes').value.trim();
+
+  const d = getData();
+  d.entries.push(vals);
+  saveData(d);
+
+  const btn = document.getElementById('btn-submit');
+  const st = document.getElementById('status-msg');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  let sheetOk = false;
+  if(d.config.url) {
+    try {
+      st.textContent = 'Sending to Google Sheets…';
+      st.className = 'status-msg';
+      const params = new URLSearchParams({
+        date: new Date(vals.date).toLocaleDateString('en-GB'),
+        chest: vals.chest||'',
+        waist: vals.waist||'',
+        arms: vals.arms||'',
+        tummy: vals.tummy||'',
+        notes: vals.notes||''
+      });
+      await fetch(d.config.url+'?'+params.toString(), {method:'GET', mode:'no-cors'});
+      sheetOk = true;
+    } catch(e) {
+      sheetOk = false;
+    }
+  }
+
+  FIELDS.forEach(f => document.getElementById('f-'+f).value = '');
+  document.getElementById('f-notes').value = '';
+  btn.disabled = false;
+  btn.textContent = 'Save this week ↗';
+  st.textContent = '';
+
+  document.getElementById('success-detail').textContent = sheetOk
+    ? 'Saved locally and sent to your Google Sheet.'
+    : d.config.url
+      ? 'Saved locally. (Sheet sync may be pending — check your connection.)'
+      : 'Saved locally on this device. Connect Google Sheets in Setup anytime.';
+
+  showScreen('success');
+}
+
+renderCheckin();
+</script>
+</body>
+</html>
